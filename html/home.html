@@ -1,0 +1,74 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: selly
+ * Date: 3/3/15
+ * Time: 5:22 PM
+ */
+?>
+<html>
+<head>
+</head>
+<body>
+<form onsubmit="return false;">
+<table>
+<tr>
+  <td></td>
+  <td>
+   <button onclick="serverExecute('forward');">forward</button>
+  </td>
+  <td></td>
+</tr>
+<tr>
+  <td>
+   <button onclick="serverExecute('left');">left</button>
+  </td><td></td><td>
+    <button onclick="serverExecute('right');">right</button>
+  </td>
+</tr><tr>
+    <td></td>
+    <td>
+      <button onclick="serverExecute('back');">back</button>
+    </td>
+    <td></td>
+  </tr>
+</table>
+</form>
+
+<script language="javascript">
+  var xmlhttp = new XMLHttpRequest();
+  var url = "./runcommand.php";
+  var done = 0;
+  var response;
+
+  function serverExecute(command) {
+    var commandUrl = url + "?command=" + command;
+
+    xmlhttp.open("GET", commandUrl, true);
+    xmlhttp.send();
+  }
+
+  xmlhttp.onreadystatechange = function() {
+    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+
+      try {
+        response = JSON.parse(xmlhttp.responseText);
+        processResponse(response);
+      } catch (e) {
+        alert("Apologies, there is a problem connecting with the database.");
+        console.log(e);
+      }
+    }
+  }
+
+  window.onload = function() {
+//    xmlhttp.open("GET", url, true);
+//    xmlhttp.send();
+  };
+
+  function processResponse(response) {
+    console.log(response["message"]);
+  }
+</script>
+
+</body></html>

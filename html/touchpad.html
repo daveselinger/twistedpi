@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>BB8 HTML remote control </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/> <!--320-->
+    <script>
+      var canvas;
+      var ctx;
+      var lastPt = null;
+      var newPt = null;
+ 	  var distanceThreshold = 5;
+ 	  var speedThreshold = 5;
+ 	  var canvasWidth = 1000;
+ 	  var canvasHeight = 1500;
+ 	  var trackerRadius = 75;
+ 	  var lastLeft = 0;
+ 	  var lastRight = 0;
+
+	//For remote command processing
+      var xmlhttp = new XMLHttpRequest();
+      var baseUrl = "/execute/";
+      var response;
+
+	  function resizeTouchzone() {
+        var touchzone = document.getElementById("mycanvas");
+	    canvasWidth = window.innerWidth;
+        canvasHeight = window.innerHeight - 100;
+        touchzone.width = 0 + canvasWidth;
+        touchzone.height = canvasHeight + 0;
+	  }
+
+      function init() {
+        resizeTouchzone();
+        var touchzone = document.getElementById("mycanvas");
+        touchzone.addEventListener("touchstart", touched, false);
+        touchzone.addEventListener("touchmove", touched, false);
+        touchzone.addEventListener("touchend", end, false);
+        ctx = touchzone.getContext("2d");
+        window.addEventListener("orientationchange", resizeTouchzone, false);
+//        window.addEventListener("resize", resizeTouchzone, false);
+// This is removed because it creates a weird infinite loop within the browser...
+      }
+      
+      function touched(e) {
+        e.preventDefault();
+
+		newPt = {x:e.touches[0].clientX, y:e.touches[0].clientY};
+        if(lastPt !=null) {
+			var xDist = Math.abs(newPt.x - lastPt.x);
+			var yDist = Math.abs(newPt.y - lastPt.y);
+			
+			var distance = Math.sqrt (xDist * xDist + yDist * yDist);
+	        if (distance > distanceThreshold) {
+	        	drawTracer(newPt);
+	        
+		        // Now send the command
+		        updateSpeed(newPt);
+
+				// Move the reference point
+		        lastPt = newPt;
+		    }
+        } else {
+          lastPt = newPt;
+        }
+      }
+ 
+ 	  function drawTracer(newPt) {
+		//Draw blue circle
+		ctx.clearRect(0,0,canvasWidth,canvasHeight);
+		ctx.fillStyle = "blue"
+		ctx.beginPath();
+		ctx.arc(newPt.x, newPt.y, trackerRadius, 0, Math.PI*2);
+		ctx.closePath();
+		ctx.fill();
+ 	  }
+ 
+	function updateSpeed(newPt) {
+		var speed = parseInt( 100 * (canvasHeight / 2 - newPt.y) / (canvasHeight / 2));
+		
+		var modifier = Math.abs((newPt.x - canvasWidth / 2) / (canvasWidth / 2));
+		var leftSpeed = speed;
+		var rightSpeed = speed;
+		
+		if (newPt.x > (canvasWidth / 2)) {
+		   //Moving to the right
+			rightSpeed = speed * (1-modifier);
+			leftSpeed = speed * (1 + modifier);
+		} else {
+			// Moving to the left.
+			leftSpeed = speed * (1-modifier);
+			rightSpeed = speed * (1 + modifier);
+		}
+		if (leftSpeed > 100) {
+			leftSpeed = 100;
+		}
+		if (rightSpeed > 100) {
+			rightSpeed = 100;
+		}
+		if (leftSpeed < -100) {
+			leftSpeed = -100;
+		}
+		if (rightSpeed < -100) {
+			rightSpeed = -100;
+		}
+		
+		leftSpeed = parseInt(leftSpeed);
+		rightSpeed = parseInt(rightSpeed);
+		
+		updateServerSpeed(leftSpeed, rightSpeed);
+	}
+
+	function updateServerSpeed(leftSpeed, rightSpeed, forced) {
+		forced = (typeof forced === 'undefined') ? false : forced;
+
+		if (!forced && (Math.abs(leftSpeed - lastLeft) + Math.abs(rightSpeed - lastRight)) < speedThreshold) {
+		  return;
+		}
+
+		serverExecute("leftSpeed=" + leftSpeed + "&rightSpeed=" + rightSpeed);
+		lastLeft = leftSpeed;
+		lastRight = rightSpeed;
+	}
+
+      function end(e) {
+        e.preventDefault();
+        stop()
+      }
+      
+      function stop() {
+        // Terminate touch path
+        lastPt=null;
+      	ctx.clearRect(0,0,canvasWidth,canvasHeight);
+      	updateServerSpeed(0,0, true);
+      }
+
+      function serverExecute(command) {
+        var commandUrl = baseUrl + "?" + command;
+
+        xmlhttp.open("GET", commandUrl, true);
+        xmlhttp.send();
+      }
+
+	  xmlhttp.onreadystatechange = function() {
+    	if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+
+	      try {
+//    	    response = JSON.parse(xmlhttp.responseText);
+//        	processResponse(response);
+	      } catch (e) {
+//    	    alert("Apologies, there is a problem connecting with the database.");
+//       		 console.log(e);
+	      }
+    	}
+  	}
+</script>
+    
+  </head>
+  <body onload="init()">
+    <canvas id="mycanvas" width = 1000 height = 1000 style="border:1px solid #cccccc;">
+      Canvas element not supported.
+    </canvas><br>
+    BB8-CONTROLLER
+  </body>
+</html>
