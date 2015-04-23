@@ -46,13 +46,22 @@ class BB8HTMLServer (resource.Resource):
         return resource.Resource.getChild(self, name, request)
     
     def render_GET(self, request):
-        left = int(request.args["leftSpeed"][0])
-        right = int(request.args["rightSpeed"][0])
-        
-        print "Command: leftSpeed: {}; rightSpeed: {}".format(left, right)
-        self.bb8.setSpeed("left", left);
-        self.bb8.setSpeed("right", right);
-        
+        if ("tilt" in request.args):
+            tilt = int(request.args["tilt"][0])
+            if (tilt < -30):
+                tilt = -30
+            if (tilt > 30):
+                tilt = 30
+            # angle range should run from -30 to +30
+            self.bb8.setServoPosition(tilt/30.0 * 100.0)
+        else:
+            left = int(request.args["leftSpeed"][0])
+            right = int(request.args["rightSpeed"][0])
+            
+            print "Command: leftSpeed: {}; rightSpeed: {}".format(left, right)
+            self.bb8.setSpeed("left", left);
+            self.bb8.setSpeed("right", right);
+
         return "Hello %r"  % (request.prepath,)
 
 class BB8ServerContainer (object):

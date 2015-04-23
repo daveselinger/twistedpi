@@ -80,6 +80,9 @@ class BB8Controller(object):
         print "position {} = targetUs {}".format(position, targetUs)
         return targetUs;
 
+    '''
+    ServoPosition is 
+    '''
     def setServoPosition(self, position):
         targetUs = round(self.getUsForServoPosition(position))
         print "ServoUs: {} TargetUs: {}".format(self.servoUs, targetUs)

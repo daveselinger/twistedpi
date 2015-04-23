@@ -18,7 +18,11 @@ class SimpleTwistedServer (resource.Resource):
             return self
     
     def render_GET(self, request):
-        print "Got request for left: {}; right: {}".format(int(request.args["leftSpeed"][0]), int(request.args["rightSpeed"][0]))
+        if ("tilt" in request.args):
+            print "Got request to tilt to: {}".format(int(request.args["tilt"][0]))
+        else:
+            print "Got request for left: {}; right: {}".format(int(request.args["leftSpeed"][0]), int(request.args["rightSpeed"][0]))
+
         return "Hello, world! I am located at %r." % (request.prepath,)
 
 class NotHello (resource.Resource):

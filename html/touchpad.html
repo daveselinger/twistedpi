@@ -15,6 +15,7 @@
  	  var trackerRadius = 75;
  	  var lastLeft = 0;
  	  var lastRight = 0;
+ 	  var lastTilt = 0;
 
 	//For remote command processing
       var xmlhttp = new XMLHttpRequest();
@@ -35,10 +36,27 @@
         touchzone.addEventListener("touchstart", touched, false);
         touchzone.addEventListener("touchmove", touched, false);
         touchzone.addEventListener("touchend", end, false);
+
+		// CREDIT: http://www.html5rocks.com/en/tutorials/device/orientation/
+		if (window.DeviceOrientationEvent) {
+		  window.addEventListener('deviceorientation', function(eventData) {
+	      // capture gamma (left-right tilt) in degrees, where right is positive
+	      var tiltLR = eventData.gamma;
+
+	      // call our orientation event handler
+	      sendServoControl(tiltLR);
+			  }, false);
+		}
+        
         ctx = touchzone.getContext("2d");
         window.addEventListener("orientationchange", resizeTouchzone, false);
-//        window.addEventListener("resize", resizeTouchzone, false);
-// This is removed because it creates a weird infinite loop within the browser...
+      }
+      
+      function sendServoControl(tiltLR) {
+      	if (Math.abs(tiltLR - lastTilt) > 2) {
+	      	serverExecute("tilt=" + parseInt(tiltLR));
+	      	lastTilt = parseInt(tiltLR);
+	    }
       }
       
       function touched(e) {
