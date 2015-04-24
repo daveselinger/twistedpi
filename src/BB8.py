@@ -11,6 +11,7 @@ from RPIO import PWM #@UnresolvedImport
 import time
 import threading
 import BB8Server
+from logging import root
 
 class BB8Controller(object):
     '''
@@ -40,6 +41,7 @@ class BB8Controller(object):
         # With a PWM Width of 10 us and a cycle of 1 ms, there are exactly 100 increments in the duty pulse cycle.
         
         # With a frequency of 1000, the entire PWM cycle will be 1 ms, with 100, cycle = 10 ms
+        # Frequency = 50, PWM is 20ms, or 20,000 1us pulses
         self.speedPWMFrequency = 50
         
         self.speedPWMCycleTime = (1000000) /self.speedPWMFrequency
@@ -149,20 +151,29 @@ class BB8Controller(object):
     
     def changeDutyCycle(self, pin, speedIn):
         speed = round(speedIn)
-        if (speed == 100):
-            speed = 99
+        if (speed > 95):
+            print "setting speed to 100%"
+            GPIO.output(pin, True)
+            return
+        
         print "changing duty cycle"
+        if (GPIO.input(pin)):
+            print "Switching from 100%"
+            GPIO.output(pin, False)
+
         PWM.clear_channel_gpio(channel=self.speedDMAChannel, gpio=pin)
-        width = int(round((1.0 * self.speedPWMCycleTime) /self.pulseWidthUs * (speed / 100.0)))
-        # speed/ 100.0 = the percent of total speed
-        # speedPWMCycleTime / pulseWidthUs = the number of pwm subcycles in 1 cycle of PWM  (the number of subcycles of RPIO.PWM) 
-        # width is therefore in units of the number of subcycles.
-        print "setting duty cycle for pin {} to {} = speed {}".format(pin, width, speed)
-        PWM.add_channel_pulse(dma_channel=self.speedDMAChannel, gpio=pin, start=0, width=width)
-        #if (speedIn > 30):
-        #    GPIO.output(pin, True)
-        #else:
-        #    GPIO.output(pin, False)
+        # Add a pulse spread out throughout the entire subcycle to equal the level of power indicated by the speed
+        # each pulse is size 1 (10 us by default) but should be spaced as close to evenly as possible throughout the subcycle
+        lastRoot = -1
+        factor = speedIn / 100.0
+        # Divide by 5 to make up for H-Bridges 5us internal signal sensitivity. Anything less than 5us will most likely not trigger the transistor within the H-Bridge
+        # Subtract 5 at the end to make up for a RPIO.PWM bug--the last address is not addressable. It's a simple off-by-one error.
+        for i in range(0, int(round((1.0 * self.speedPWMCycleTime) /self.pulseWidthUs / 5))-5):
+            current = i % 100
+            root = int(current * factor)
+            if (root != lastRoot):
+                PWM.add_channel_pulse(dma_channel=self.speedDMAChannel, gpio=pin, start=i * 5, width=5)
+                lastRoot = root
 
     def initMotors(self):
         GPIO.setmode(GPIO.BCM)
