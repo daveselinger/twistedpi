@@ -1,5 +1,9 @@
 #!/bin/sh
  
+# Special thanks to Stephen Phillips for his blog on making this: http://blog.scphillips.com/2013/07/getting-a-python-script-to-run-in-the-background-as-a-service-on-boot/
+# After putting this in /etc/init.d (and run chmod +x as root), then run a command to have it run on boot:
+# sudo update-rc.d myservice.sh defaults
+ 
 ### BEGIN INIT INFO
 # Provides:          bb8
 # Required-Start:    $remote_fs $syslog
