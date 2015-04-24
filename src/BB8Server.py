@@ -38,8 +38,9 @@ class BB8LineServerFactory (Factory):
 class BB8HTMLServer (resource.Resource):
     def __init__(self, bb8): 
         self.bb8 = bb8
+        self.tiltMax = 50
+        self.isLeaf = True
     
-    isLeaf = True
     def getChild(self, name, request):
         if (name==''):
             return self
@@ -48,12 +49,12 @@ class BB8HTMLServer (resource.Resource):
     def render_GET(self, request):
         if ("tilt" in request.args):
             tilt = int(request.args["tilt"][0])
-            if (tilt < -30):
-                tilt = -30
-            if (tilt > 30):
-                tilt = 30
-            # angle range should run from -30 to +30
-            self.bb8.setServoPosition(tilt/30.0 * 100.0)
+            if (tilt < -1 * self.tiltMax):
+                tilt = -1 * self.tiltMax
+            if (tilt > self.tiltMax):
+                tilt = self.tiltMax
+            # angle range should run from -50 to +50
+            self.bb8.setServoPosition(tilt/(1.0 * self.tiltMax) * 100.0)
         else:
             left = int(request.args["leftSpeed"][0])
             right = int(request.args["rightSpeed"][0])

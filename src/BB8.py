@@ -29,12 +29,13 @@ class BB8Controller(object):
         
         # Servo hardware configuration 
         self.servoPin = 24
-        self.servoCycle = 20000
         # 20 ms in units of us -- this is the default
+        self.servoRange = 80
+        # 80% of the total servo range is addressable.
         self.servoDMAChannel = 0
 
         # Speed changing hardware configuration
-        self.speedDMAChannel = 1
+        self.speedDMAChannel = 0
         self.pulseWidthUs = 10
         # With a PWM Width of 10 us and a cycle of 1 ms, there are exactly 100 increments in the duty pulse cycle.
         
@@ -42,6 +43,7 @@ class BB8Controller(object):
         self.speedPWMFrequency = 50
         
         self.speedPWMCycleTime = (1000000) /self.speedPWMFrequency
+        self.servoCycle = self.speedPWMCycleTime
         # Cycle time is in units of us (hence the multiplication by 1,000,000)
         
         self.loopFrequency = 50
@@ -66,9 +68,9 @@ class BB8Controller(object):
         self.motorLeftSpeedPin = 25
         
         # The actual Us
-        self.servoUs = 0
+        self.servoUs = 1500
         # The target Us -- we use a smoothing algorithm to bring the actual Us to the Target Us over a curve.
-        self.servoTargetUs = 0
+        self.servoTargetUs = 1500
 
     def getUsForServoPosition(self, position):
         '''
@@ -76,7 +78,7 @@ class BB8Controller(object):
         -100 should create a pulse width = 0.5ms, 0 should be 1.5ms and +100 should be 2.5ms
         Us = Ms * 1000
         '''
-        targetUs = 1500 + (float(position) * 10);
+        targetUs = 1500 + (round(position) * 10);
         print "position {} = targetUs {}".format(position, targetUs)
         return targetUs;
 
@@ -84,8 +86,9 @@ class BB8Controller(object):
     ServoPosition is 
     '''
     def setServoPosition(self, position):
-        targetUs = round(self.getUsForServoPosition(position))
-        print "ServoUs: {} TargetUs: {}".format(self.servoUs, targetUs)
+        #Adjust for the total addressable range 
+        targetUs = round(self.getUsForServoPosition(position * self.servoRange / 100))
+        print "Setting ServoUs: {} TargetUs: {}".format(self.servoUs, targetUs)
         if (abs(targetUs - self.servoUs) >= 10):
             self.servoTargetUs = targetUs
         
@@ -149,13 +152,17 @@ class BB8Controller(object):
         if (speed == 100):
             speed = 99
         print "changing duty cycle"
-        PWM.clear_channel_gpio(0, pin)
+        PWM.clear_channel_gpio(channel=self.speedDMAChannel, gpio=pin)
         width = int(round((1.0 * self.speedPWMCycleTime) /self.pulseWidthUs * (speed / 100.0)))
         # speed/ 100.0 = the percent of total speed
         # speedPWMCycleTime / pulseWidthUs = the number of pwm subcycles in 1 cycle of PWM  (the number of subcycles of RPIO.PWM) 
         # width is therefore in units of the number of subcycles.
         print "setting duty cycle for pin {} to {} = speed {}".format(pin, width, speed)
-        PWM.add_channel_pulse(0, pin, start=0, width=width)
+        PWM.add_channel_pulse(dma_channel=self.speedDMAChannel, gpio=pin, start=0, width=width)
+        #if (speedIn > 30):
+        #    GPIO.output(pin, True)
+        #else:
+        #    GPIO.output(pin, False)
 
     def initMotors(self):
         GPIO.setmode(GPIO.BCM)
@@ -176,6 +183,7 @@ class BB8Controller(object):
         # Initialize servo
         self.servo = PWM.Servo(dma_channel = self.servoDMAChannel, subcycle_time_us = self.servoCycle)
         self.setServoPosition(0)
+        #PWM.init_channel(channel = self.servoDMAChannel, subcycle_time_us = self.servoCycle)
         
         # Initialize motor speed control
         PWM.init_channel(channel = self.speedDMAChannel, subcycle_time_us = self.speedPWMCycleTime)
