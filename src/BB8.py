@@ -48,7 +48,7 @@ class BB8Controller(object):
         self.servoCycle = self.speedPWMCycleTime
         # Cycle time is in units of us (hence the multiplication by 1,000,000)
         
-        self.loopFrequency = 50
+        self.loopFrequency = 25
         # The frequency of the control loop for smoothing position/speed
         
         self.leftSpeed = 0
@@ -151,12 +151,11 @@ class BB8Controller(object):
     
     def changeDutyCycle(self, pin, speedIn):
         speed = round(speedIn)
-        if (speed > 95):
+        if (speed > 70):
             print "setting speed to 100%"
             GPIO.output(pin, True)
             return
         
-        print "changing duty cycle"
         if (GPIO.input(pin)):
             print "Switching from 100%"
             GPIO.output(pin, False)
@@ -212,7 +211,7 @@ class BB8Controller(object):
         if ("right" == motor):
             self.rightTargetSpeed = speed
                 
-        print "setting {} to {}, and current {}, {}".format(motor, speed, self.leftSpeed, self.rightSpeed)
+#        print "setting {} to {}, and current {}, {}".format(motor, speed, self.leftSpeed, self.rightSpeed)
         return
         
     def startServer(self):

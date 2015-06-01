@@ -63,7 +63,7 @@ class BB8HTMLServer (resource.Resource):
             self.bb8.setSpeed("left", left);
             self.bb8.setSpeed("right", right);
 
-        return "Hello %r"  % (request.prepath,)
+        return "Hello"
 
 class BB8ServerContainer (object):
     def __init__(self):
